@@ -40,7 +40,7 @@ impl UserDbTrait for UserMongo {
             });
         }
 
-        Err(CustomError::UserNotFound)
+        Err(CustomError::UserNotFound(404))
     }
     async fn get_by_id(&self, id: &str) -> Result<GetUserResponse, CustomError> {
         let db = self.client.database(&self.db_name);
@@ -60,7 +60,7 @@ impl UserDbTrait for UserMongo {
             });
         }
 
-        Err(CustomError::UserNotFound)
+        Err(CustomError::UserNotFound(404))
     }
 
     async fn create(&self, user: User) -> Result<String, CustomError> {
@@ -68,12 +68,19 @@ impl UserDbTrait for UserMongo {
 
         let collection = db.collection(COLLECTION_NAME);
         let uuid = uuid::Uuid::new_v4();
+        let email = user.email.clone();
         let doc = doc! {
             "id": uuid.to_string(),
             "name": user.name,
             "email": user.email,
             "password": user.password,
         };
+        // await User.findOne({ "$or": [ { email: email }, { phone: phone} ] });
+        let exist_user = collection.find_one(doc! {"$or":[{"id": uuid.to_string()},{ "email": &email}]}, None).await;
+
+        if exist_user.is_ok(){
+            return Err(CustomError::EmailAlreadyExists(400));
+        }
 
         let inserted = collection.insert_one(doc.clone(), None).await;
 
