@@ -44,7 +44,6 @@ impl UserServiceTrait for UserService {
 
         if !missing_properties.is_empty() {
             return Err(CustomError::MissingFields(
-                400,
                 missing_properties.join(", ").to_string(),
             ));
         }
@@ -111,7 +110,7 @@ mod unit_tests {
 
         assert_eq!(
             result.unwrap_err(),
-            CustomError::MissingFields(400, "email".to_string())
+            CustomError::MissingFields("email".to_string())
         );
     }
 }
