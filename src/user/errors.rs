@@ -6,6 +6,7 @@ use std::error::Error;
 pub enum CustomError {
     UserNotFound,
     UserAlreadyExists,
+    EmailAlreadyExists,
     MissingFields(String),
     GenericError(String),
 }
@@ -15,6 +16,7 @@ impl fmt::Display for CustomError {
         match self {
             CustomError::UserNotFound => write!(f, "User not found"),
             CustomError::UserAlreadyExists => write!(f, "User already exists"),
+            CustomError::EmailAlreadyExists => write!(f, "Email already exists"),
             CustomError::MissingFields(msg) => write!(f, "The following fields are missing: {}", msg),
             CustomError::GenericError(msg) => write!(f, "An error ocurred: {}", msg),
         }

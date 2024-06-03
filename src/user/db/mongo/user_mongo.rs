@@ -84,7 +84,7 @@ impl UserDbTrait for UserMongo {
         match inserted {
             Ok(result) => {
                 match result.inserted_id.as_object_id() {
-                    Some(object_id) => Ok(object_id.to_hex()),
+                    Some(uuid) => Ok(uuid.to_string()),
                     None => Err(CustomError::GenericError("Inserted ID is not ObjectId".into())),
                 }
             },
