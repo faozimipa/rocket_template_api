@@ -7,7 +7,7 @@ use crate::user::service::UserServiceTrait;
 use crate::core::api_response::ErrorResponse;
 use crate::user::errors::CustomError;
 
-use super::models::use_case::user::{GetUserResponse, CreateUserResponse};
+use super::models::use_case::user::{CreateUserResponse, GetAllUserResponse, GetUserResponse};
 
 #[get("/user/<id>")]
 pub async fn get_by_id(user_service: &State<Box<dyn UserServiceTrait>>, id: &str) -> Result<status::Custom<Json<GetUserResponse>>, status::Custom<Json<ErrorResponse>>> {
@@ -30,6 +30,27 @@ pub async fn get_by_id(user_service: &State<Box<dyn UserServiceTrait>>, id: &str
         email: user.email,
     })))
 }
+
+#[get("/user")]
+pub async fn get_all(user_service: &State<Box<dyn UserServiceTrait>>) -> Result<status::Custom<Json<GetAllUserResponse>>, status::Custom<Json<ErrorResponse>>> {
+
+    let get_all_user_result = user_service.get_all().await;
+
+    if let Err(err) = get_all_user_result {
+        match err {
+            CustomError::UserNotFound => return Err(status::Custom(Status::NotFound, Json(ErrorResponse { message: "".to_string() }))),
+            CustomError::GenericError(msg) => return Err(status::Custom(Status::InternalServerError, Json(ErrorResponse { message: format!("Generic error: {}", msg) }))),
+            _ => return Err(status::Custom(Status::InternalServerError, Json(ErrorResponse { message: format!("Unknown error: {}", err.to_string()) }))),
+        }
+    }
+
+    let user_all = get_all_user_result.unwrap();
+
+    Ok(status::Custom(Status::Ok, Json(GetAllUserResponse {
+        data: user_all.data
+    })))
+}
+
 
 #[post("/user", data = "<user>")]
 pub async fn create(user_service: &State<Box<dyn UserServiceTrait>>, user: Json<CreateUserRequest>) -> Result<status::Custom<Json<CreateUserResponse>>, status::Custom<Json<ErrorResponse>>> {

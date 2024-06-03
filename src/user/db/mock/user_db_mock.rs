@@ -1,9 +1,15 @@
-use crate::user::{errors::CustomError, models::{user::User, use_case::user::GetUserResponse}, repository::UserDbTrait};
+use crate::user::{errors::CustomError, models::{use_case::user::{GetAllUserResponse, GetUserResponse}, user::User}, repository::UserDbTrait};
 
 pub struct MockUserDB {}
 
 #[async_trait]
 impl UserDbTrait for MockUserDB {
+    async fn get_all (&self) -> Result<GetAllUserResponse, CustomError> {
+        Ok(GetAllUserResponse {
+            data: Vec::new() 
+        })
+    }
+
     async fn get_by_id(&self, id: &str) -> Result<GetUserResponse, CustomError> {
         Ok(GetUserResponse {
             id: id.to_owned(),

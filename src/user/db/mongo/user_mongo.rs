@@ -1,5 +1,6 @@
-use crate::user::{errors::CustomError, models::{user::User, use_case::user::GetUserResponse}, repository::UserDbTrait};
+use crate::user::{errors::CustomError, models::{use_case::user::{GetAllUserResponse, GetUserResponse}, user::User}, repository::UserDbTrait};
 use mongodb::{error::Result as MongoResult, Client, bson::{doc, oid::ObjectId, Document}, Collection};
+use rocket::futures::TryStreamExt;
 
 const COLLECTION_NAME: &str = "users";
 
@@ -17,6 +18,29 @@ impl UserMongo {
 
 #[async_trait]
 impl UserDbTrait for UserMongo {
+    async fn get_all(&self) -> Result<GetAllUserResponse, CustomError> {
+        let db = self.client.database(&self.db_name);
+
+        let collection: mongodb::Collection<User> = db.collection(COLLECTION_NAME);
+        let mut cursor = collection.find(doc! {}, None).await?;
+        let mut users: Vec<User> = Vec::new();
+        while let Some(result) = cursor.try_next().await? {
+            println!("{:?}", serde_json::to_value(&result).unwrap());
+            users.push(result);
+        }
+        if !users.is_empty() {
+            let user_responses: Vec<GetUserResponse> = users.into_iter().map(|user| GetUserResponse {
+                id: user.id.unwrap_or_else(|| "_id".to_string()),
+                name: user.name,
+                email: user.email,
+            }).collect();
+            return Ok(GetAllUserResponse {
+                data: user_responses
+            });
+        }
+
+        Err(CustomError::UserNotFound)
+    }
     async fn get_by_id(&self, id: &str) -> Result<GetUserResponse, CustomError> {
         let db = self.client.database(&self.db_name);
 

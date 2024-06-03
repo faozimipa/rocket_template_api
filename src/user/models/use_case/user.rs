@@ -6,6 +6,10 @@ pub struct GetUserResponse {
     pub name: String,
     pub email: String,
 }
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GetAllUserResponse {
+    pub data: Vec<GetUserResponse>
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CreateUserRequest {

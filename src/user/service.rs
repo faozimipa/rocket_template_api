@@ -1,4 +1,4 @@
-use super::{models::{user::User, use_case::user::{GetUserResponse, CreateUserRequest}}, errors::CustomError, repository::UserDbTrait};
+use super::{errors::CustomError, models::{use_case::user::{CreateUserRequest, GetAllUserResponse, GetUserResponse}, user::User}, repository::UserDbTrait};
 use bcrypt::{hash, DEFAULT_COST};
 
 pub struct UserService {
@@ -13,6 +13,7 @@ impl UserService {
 
 #[async_trait]
 pub trait UserServiceTrait: Send + Sync {
+    async fn get_all(&self) -> Result<GetAllUserResponse, CustomError>;
     async fn get_by_id(&self, id: &str) -> Result<GetUserResponse, CustomError>;
     async fn create(&self, new_user: CreateUserRequest) -> Result<String, CustomError>;
     async fn delete(&self, id: &str) -> Result<(), CustomError>;
@@ -20,6 +21,10 @@ pub trait UserServiceTrait: Send + Sync {
 
 #[async_trait]
 impl UserServiceTrait for UserService {
+    async fn get_all(&self) -> Result<GetAllUserResponse, CustomError> {
+        self.user_db.get_all().await
+    }
+
     async fn get_by_id(&self, id: &str) -> Result<GetUserResponse, CustomError> {
         self.user_db.get_by_id(id).await
     }
