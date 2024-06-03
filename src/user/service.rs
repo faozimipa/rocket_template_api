@@ -1,5 +1,12 @@
-use super::{errors::CustomError, models::{use_case::user::{CreateUserRequest, GetAllUserResponse, GetUserResponse}, user::User}, repository::UserDbTrait};
-use bcrypt::{hash, DEFAULT_COST};
+use super::{
+    errors::CustomError,
+    models::{
+        use_case::user::{ CreateUserRequest, GetAllUserResponse, GetUserResponse },
+        user::User,
+    },
+    repository::UserDbTrait,
+};
+use bcrypt::{ hash, DEFAULT_COST };
 
 pub struct UserService {
     user_db: Box<dyn UserDbTrait>,
@@ -43,13 +50,12 @@ impl UserServiceTrait for UserService {
         }
 
         if !missing_properties.is_empty() {
-            return Err(CustomError::MissingFields(
-                missing_properties.join(", ").to_string(),
-            ));
+            return Err(CustomError::MissingFields(missing_properties.join(", ").to_string()));
         }
 
-        let hashed_password = hash(&new_user.plain_password, DEFAULT_COST)
-            .map_err(|err| CustomError::GenericError(format!("Hashing error: {}", err)))?;
+        let hashed_password = hash(&new_user.plain_password, DEFAULT_COST).map_err(|err|
+            CustomError::GenericError(format!("Hashing error: {}", err))
+        )?;
 
         let user = User {
             password: hashed_password,
@@ -97,7 +103,7 @@ mod unit_tests {
     #[tokio::test]
     async fn test_create_user_missing_fields() {
         let mock_db = MockUserDbTrait::new();
-        
+
         let user_service = UserService { user_db: Box::new(mock_db) };
 
         let test_user = CreateUserRequest {
@@ -108,9 +114,6 @@ mod unit_tests {
 
         let result = user_service.create(test_user).await;
 
-        assert_eq!(
-            result.unwrap_err(),
-            CustomError::MissingFields("email".to_string())
-        );
+        assert_eq!(result.unwrap_err(), CustomError::MissingFields("email".to_string()));
     }
 }

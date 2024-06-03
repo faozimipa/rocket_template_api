@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{ Serialize, Deserialize };
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetUserResponse {
@@ -8,7 +8,7 @@ pub struct GetUserResponse {
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetAllUserResponse {
-    pub data: Vec<GetUserResponse>
+    pub data: Vec<GetUserResponse>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
