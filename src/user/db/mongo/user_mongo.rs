@@ -1,5 +1,5 @@
 use crate::user::{errors::CustomError, models::{use_case::user::{GetAllUserResponse, GetUserResponse}, user::User}, repository::UserDbTrait};
-use mongodb::{error::Result as MongoResult, Client, bson::{doc, oid::ObjectId, Document}, Collection};
+use mongodb::{error::Result as MongoResult, Client, bson::{doc, Document}, Collection};
 use rocket::futures::TryStreamExt;
 
 const COLLECTION_NAME: &str = "users";
@@ -22,6 +22,7 @@ impl UserDbTrait for UserMongo {
         let db = self.client.database(&self.db_name);
 
         let collection: mongodb::Collection<User> = db.collection(COLLECTION_NAME);
+        // let mut cursor = collection.(doc! {}, None).await?;
         let mut cursor = collection.find(doc! {}, None).await?;
         let mut users: Vec<User> = Vec::new();
         while let Some(result) = cursor.try_next().await? {
@@ -46,12 +47,12 @@ impl UserDbTrait for UserMongo {
 
         let collection: mongodb::Collection<User> = db.collection(COLLECTION_NAME);
 
-        let object_id = match ObjectId::parse_str(id) {
-            Ok(oid) => oid,
-            Err(_e) => return Err(CustomError::GenericError("ID is not valid".into())),
-        };
+        // let object_id = match ObjectId::parse_str(id) {
+        //     Ok(oid) => oid,
+        //     Err(_e) => return Err(CustomError::GenericError("ID is not valid".into())),
+        // };
 
-        if let Some(query_result) = collection.find_one(doc! {"_id": object_id}, None).await? {
+        if let Some(query_result) = collection.find_one(doc! {"id": id}, None).await? {
             return Ok(GetUserResponse {
                 id: id.into(),
                 name: query_result.name,
@@ -66,8 +67,9 @@ impl UserDbTrait for UserMongo {
         let db = self.client.database(&self.db_name);
 
         let collection = db.collection(COLLECTION_NAME);
-
+        let uuid = uuid::Uuid::new_v4();
         let doc = doc! {
+            "id": uuid.to_string(),
             "name": user.name,
             "email": user.email,
             "password": user.password,
@@ -95,12 +97,12 @@ impl UserDbTrait for UserMongo {
 
         let collection: Collection<Document> = db.collection(COLLECTION_NAME);
 
-        let object_id = match ObjectId::parse_str(id) {
-            Ok(oid) => oid,
-            Err(_e) => return Err(CustomError::GenericError("ID is not valid".into())),
-        };
+        // let object_id = match ObjectId::parse_str(id) {
+        //     Ok(oid) => oid,
+        //     Err(_e) => return Err(CustomError::GenericError("ID is not valid".into())),
+        // };
 
-        let deleted = collection.delete_one(doc! {"_id": object_id}, None).await;
+        let deleted = collection.delete_one(doc! {"id": id}, None).await;
 
         if let Err(err) = deleted {
             return Err(CustomError::from(err));

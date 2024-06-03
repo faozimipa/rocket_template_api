@@ -584,6 +584,7 @@ dependencies = [
  "rocket_contrib",
  "serde",
  "serde_json",
+ "uuid",
 ]
 
 [[package]]
