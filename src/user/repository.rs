@@ -3,6 +3,8 @@ use crate::user::errors::CustomError;
 
 use super::models::use_case::user::GetUserResponse;
 use super::models::use_case::user::GetAllUserResponse;
+use super::models::use_case::user::UserProfile;
+use super::models::use_case::user::UserCredential;
 
 #[cfg(test)]
 use mockall::automock;
@@ -10,6 +12,7 @@ use mockall::automock;
 #[cfg_attr(test, automock)]
 #[async_trait]
 pub trait UserDbTrait: Sync + Send {
+    async fn login(&self, credential:UserCredential) -> Result<UserProfile, CustomError>;
     async fn get_all(&self) -> Result<GetAllUserResponse, CustomError>;
     async fn get_by_id(&self, id: &str) -> Result<GetUserResponse, CustomError>;
     async fn create(&self, user: User) -> Result<String, CustomError>;

@@ -1,8 +1,15 @@
-use crate::user::{
-    errors::CustomError,
-    models::{ use_case::user::{ GetAllUserResponse, GetUserResponse }, user::User },
-    repository::UserDbTrait,
+use crate::{
+    core::auth::create_jwt,
+    user::{
+        errors::CustomError,
+        models::{
+            use_case::user::{ GetAllUserResponse, GetUserResponse, UserCredential, UserProfile },
+            user::User,
+        },
+        repository::UserDbTrait,
+    },
 };
+use bcrypt::verify;
 use mongodb::{ error::Result as MongoResult, Client, bson::{ doc, Document }, Collection };
 use rocket::futures::TryStreamExt;
 
@@ -22,6 +29,36 @@ impl UserMongo {
 
 #[async_trait]
 impl UserDbTrait for UserMongo {
+    async fn login(&self, credential: UserCredential) -> Result<UserProfile, CustomError> {
+        let db = self.client.database(&self.db_name);
+        let collection: mongodb::Collection<User> = db.collection(COLLECTION_NAME);
+        let user = collection.find_one(doc! { "email": credential.email }, None).await;
+
+        if let Ok(Some(user)) = user {
+            let my_id = user.id.clone();
+            let my_password = user.password.clone();
+            if verify(credential.password, &my_password).unwrap() {
+                match create_jwt(my_id) {
+                    Ok(token) => {
+                        Ok(UserProfile {
+                            data: GetUserResponse {
+                                id: user.id.clone(),
+                                name: user.name.clone(),
+                                email: user.email.clone(),
+                            },
+                            token: token.clone(),
+                        })
+                    }
+                    Err(err) => Err(CustomError::GenericError(err.to_string())),
+                }
+            } else {
+                Err(CustomError::UserNotFound)
+            }
+        } else {
+            Err(CustomError::UserNotFound)
+        }
+    }
+
     async fn get_all(&self) -> Result<GetAllUserResponse, CustomError> {
         let db = self.client.database(&self.db_name);
 
@@ -37,7 +74,7 @@ impl UserDbTrait for UserMongo {
             let user_responses: Vec<GetUserResponse> = users
                 .into_iter()
                 .map(|user| GetUserResponse {
-                    id: user.id.unwrap_or_else(|| "_id".to_string()),
+                    id: user.id,
                     name: user.name,
                     email: user.email,
                 })
@@ -67,17 +104,17 @@ impl UserDbTrait for UserMongo {
         let db = self.client.database(&self.db_name);
 
         let collection = db.collection(COLLECTION_NAME);
-        let uuid = uuid::Uuid::new_v4();
         let email = user.email.clone();
+        let id = user.id.clone();
         let doc =
             doc! {
-            "id": uuid.to_string(),
+            "id": user.id,
             "name": user.name,
             "email": user.email,
             "password": user.password,
         };
         let exist_user = collection.find_one(
-            doc! { "$or":[{"id": uuid.to_string()},{ "email": &email}] },
+            doc! { "$or":[{"id": id},{ "email": &email}] },
             None
         ).await;
         if let Ok(Some(_)) = exist_user {

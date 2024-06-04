@@ -1,7 +1,13 @@
 use super::{
     errors::CustomError,
     models::{
-        use_case::user::{ CreateUserRequest, GetAllUserResponse, GetUserResponse },
+        use_case::user::{
+            CreateUserRequest,
+            GetAllUserResponse,
+            GetUserResponse,
+            UserCredential,
+            UserProfile,
+        },
         user::User,
     },
     repository::UserDbTrait,
@@ -20,6 +26,8 @@ impl UserService {
 
 #[async_trait]
 pub trait UserServiceTrait: Send + Sync {
+    async fn login(&self, credential: UserCredential) -> Result<UserProfile, CustomError>;
+
     async fn get_all(&self) -> Result<GetAllUserResponse, CustomError>;
     async fn get_by_id(&self, id: &str) -> Result<GetUserResponse, CustomError>;
     async fn create(&self, new_user: CreateUserRequest) -> Result<String, CustomError>;
@@ -28,6 +36,9 @@ pub trait UserServiceTrait: Send + Sync {
 
 #[async_trait]
 impl UserServiceTrait for UserService {
+    async fn login(&self, credential: UserCredential) -> Result<UserProfile, CustomError> {
+        self.user_db.login(credential).await
+    }
     async fn get_all(&self) -> Result<GetAllUserResponse, CustomError> {
         self.user_db.get_all().await
     }
@@ -60,7 +71,7 @@ impl UserServiceTrait for UserService {
         let user = User {
             password: hashed_password,
             name: new_user.name,
-            id: None,
+            id: uuid::Uuid::new_v4().to_string(),
             email: new_user.email,
         };
 

@@ -7,7 +7,13 @@ use crate::user::service::UserServiceTrait;
 use crate::core::api_response::ErrorResponse;
 use crate::user::errors::CustomError;
 
-use super::models::use_case::user::{ CreateUserResponse, GetAllUserResponse, GetUserResponse };
+use super::models::use_case::user::{
+    CreateUserResponse,
+    GetAllUserResponse,
+    GetUserResponse,
+    UserCredential,
+    UserProfile,
+};
 
 #[get("/user/<id>")]
 pub async fn get_by_id(
@@ -108,6 +114,46 @@ pub async fn get_all(
             })
         )
     )
+}
+
+#[post("/login", data = "<credential>")]
+pub async fn login(
+    user_service: &State<Box<dyn UserServiceTrait>>,
+    credential: Json<UserCredential>
+) -> Result<status::Custom<Json<UserProfile>>, status::Custom<Json<ErrorResponse>>> {
+    let my_credential = UserCredential {
+        ..credential.into_inner()
+    };
+    let result = user_service.login(my_credential).await;
+
+    match result {
+        Ok(profile) => {
+            Ok(
+                status::Custom(
+                    Status::Ok,
+                    Json(UserProfile {
+                        data: GetUserResponse {
+                            id: profile.data.id,
+                            email: profile.data.email,
+                            name: profile.data.name,
+                        },
+                        token: profile.token,
+                    })
+                )
+            )
+        }
+        Err(err) => {
+            // Handle the error case here
+            return Err(
+                status::Custom(
+                    Status::Unauthorized,
+                    Json(ErrorResponse {
+                        message: format!("Unauthorize: {}", err.to_string()),
+                    })
+                )
+            );
+        }
+    }
 }
 
 #[post("/user", data = "<user>")]

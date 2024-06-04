@@ -19,6 +19,7 @@ pub mod user {
 
 pub mod core {
     pub mod api_response;
+    pub mod auth;
 }
 
 use user::db::mongo::user_mongo::UserMongo;
@@ -40,6 +41,7 @@ async fn rocket() -> _ {
     rocket
         ::build()
         .manage(user_service)
+        .mount("/", routes![user::routes::login])
         .mount("/", routes![user::routes::get_by_id])
         .mount("/", routes![user::routes::get_all])
         .mount("/", routes![user::routes::create])
